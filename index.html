@@ -1,0 +1,60 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lift Maintenance App</title>
+</head>
+<body>
+  <h2>Lift Maintenance & Inspection</h2>
+
+  <label>Project Name:</label>
+  <input id="project" placeholder="Enter project name">
+
+  <br><br>
+
+  <label>Lift ID:</label>
+  <input id="lift" placeholder="Enter lift ID">
+
+  <br><br>
+
+  <label>Inspection Status:</label>
+  <select id="status">
+    <option>Pending</option>
+    <option>In Progress</option>
+    <option>Completed</option>
+  </select>
+
+  <br><br>
+
+  <label>Technical Remarks:</label>
+  <textarea id="remarks"
+    placeholder="Describe the issue"></textarea>
+
+  <br><br>
+
+  <button onclick="saveReport()">Save Report</button>
+
+  <p id="result"></p>
+
+  <script>
+    function saveReport() {
+      const project =
+        document.getElementById("project").value;
+      const lift =
+        document.getElementById("lift").value;
+      const status =
+        document.getElementById("status").value;
+      const remarks =
+        document.getElementById("remarks").value;
+
+      document.getElementById("result").innerText =
+        "Project: " + project +
+        " | Lift ID: " + lift +
+        " | Status: " + status +
+        " | Remarks: " + remarks;
+    }
+  </script>
+</body>
+</html>
