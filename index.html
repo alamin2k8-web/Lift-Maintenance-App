@@ -3,76 +3,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lift Maintenance App</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: Arial, sans-serif;
-      background: #f1f5f9;
-      margin: 0;
-      padding: 20px;
-      color: #1e293b;
-    }
-    .container {
-      max-width: 700px;
-      margin: auto;
-      background: white;
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: 0 4px 15px #0001;
-    }
-    h1 { color: #075985; font-size: 25px; }
-    label {
-      display: block;
-      margin-top: 15px;
-      font-weight: bold;
-    }
-    input, select, textarea {
-      width: 100%;
-      padding: 11px;
-      margin-top: 6px;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      font-size: 15px;
-    }
-    button {
-      margin-top: 20px;
-      padding: 12px 18px;
-      background: #0369a1;
-      color: white;
-      border: 0;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    .note { color: #64748b; font-size: 13px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lift Maintenance Dashboard</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#f1f5f9;
+margin:0;padding:20px;color:#1e293b}
+.container{max-width:1000px;margin:auto}
+.card{background:white;padding:22px;border-radius:12px;
+margin-bottom:20px;box-shadow:0 3px 12px #0001}
+h1,h2{color:#075985}
+label{display:block;margin-top:14px;font-weight:bold}
+input,select,textarea{width:100%;padding:11px;
+margin-top:5px;border:1px solid #cbd5e1;
+border-radius:6px;font-size:15px}
+button{padding:11px 16px;border:0;border-radius:6px;
+background:#0369a1;color:white;cursor:pointer;margin:8px 4px 0 0}
+.danger{background:#b91c1c}
+table{width:100%;border-collapse:collapse;min-width:800px}
+th,td{padding:10px;border:1px solid #e2e8f0;
+text-align:left;font-size:14px;overflow-wrap:anywhere}
+th{background:#e0f2fe}
+.table-wrap{overflow-x:auto}
+.small{color:#64748b;font-size:13px}
+</style>
 </head>
 <body>
-  <div class="container">
+<div class="container">
+  <div class="card">
     <h1>Lift Maintenance & Inspection</h1>
-    <p>Lift inspection and service report</p>
+    <p>Lift inspection and service report dashboard</p>
+    <h2>New Inspection Report</h2>
 
     <form id="liftForm">
-      <label>Project Name</label>
-      <input id="project" required
-        placeholder="Enter project name">
+      <label>Project Name *</label>
+      <input id="project" required>
 
-      <label>Lift ID</label>
-      <input id="liftId" required
-        placeholder="Enter lift ID">
+      <label>Lift ID *</label>
+      <input id="liftId" required>
 
-      <label>Lift Capacity (kg)</label>
-      <input id="capacity" type="number" min="1"
-        placeholder="e.g. 630">
+      <label>Capacity (kg)</label>
+      <input id="capacity" type="number" min="1">
 
       <label>Number of Floors</label>
-      <input id="floors" type="number" min="1"
-        placeholder="e.g. 10">
+      <input id="floors" type="number" min="1">
 
-      <label>Inspection Date</label>
+      <label>Inspection Date *</label>
       <input id="date" type="date" required>
 
       <label>Inspection Status</label>
@@ -84,31 +61,175 @@
       </select>
 
       <label>Technical Remarks / Fault</label>
-      <textarea id="remarks" rows="4"
-        placeholder="Describe the issue or inspection findings"></textarea>
+      <textarea id="remarks" rows="3"></textarea>
 
       <label>Corrective Action</label>
-      <textarea id="action" rows="3"
-        placeholder="Describe the action taken"></textarea>
+      <textarea id="action" rows="3"></textarea>
 
       <button type="submit">Save Report</button>
+      <button type="reset" style="background:#64748b">
+        Clear Form
+      </button>
     </form>
-
     <p id="message" role="status"></p>
-    <p class="note">
-      First version: form design only. Data storage will be
-      added in the next step.
-    </p>
   </div>
 
-  <script>
-    document.getElementById("liftForm")
-      .addEventListener("submit", function(event) {
-        event.preventDefault();
-        document.getElementById("message").textContent =
-          "Form tested successfully! Next step: save reports.";
-      });
-  </script>
+  <div class="card">
+    <h2>Saved Reports</h2>
+    <p id="count">Total reports: 0</p>
+    <input id="search" placeholder="Search project or Lift ID...">
+    <button id="export">Export CSV</button>
+
+    <div class="table-wrap" style="margin-top:15px">
+      <table>
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th>Lift ID</th>
+            <th>Capacity</th>
+            <th>Floors</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Remarks</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="reports"></tbody>
+      </table>
+    </div>
+    <p class="small">
+      Reports are saved in this browser on this device.
+      They are not shared with other users.
+    </p>
+  </div>
+</div>
+
+<script>
+const form = document.getElementById("liftForm");
+const message = document.getElementById("message");
+const storageKey = "liftInspectionReportsV1";
+let reports = [];
+
+try {
+  reports = JSON.parse(localStorage.getItem(storageKey) || "[]");
+  if (!Array.isArray(reports)) reports = [];
+} catch {
+  reports = [];
+}
+
+function persist() {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(reports));
+    return true;
+  } catch {
+    message.textContent =
+      "Storage failed. Please check browser storage.";
+    return false;
+  }
+}
+
+function render() {
+  const query = document.getElementById("search").value.toLowerCase();
+  const body = document.getElementById("reports");
+  body.replaceChildren();
+
+  const filtered = reports.filter(r =>
+    (r.project + " " + r.liftId).toLowerCase().includes(query)
+  );
+
+  document.getElementById("count").textContent =
+    "Total reports: " + reports.length;
+
+  filtered.forEach(r => {
+    const tr = document.createElement("tr");
+    [
+      r.project, r.liftId,
+      r.capacity || "-", r.floors || "-",
+      r.date, r.status, r.remarks || "-"
+    ].forEach(value => {
+      const td = document.createElement("td");
+      td.textContent = value;
+      tr.appendChild(td);
+    });
+
+    const td = document.createElement("td");
+    const btn = document.createElement("button");
+    btn.textContent = "Delete";
+    btn.className = "danger";
+    btn.type = "button";
+    btn.addEventListener("click", () => {
+      if (!confirm("Delete this report?")) return;
+      const previous = reports;
+      reports = reports.filter(item => item.id !== r.id);
+      if (!persist()) {
+        reports = previous;
+        return;
+      }
+      message.textContent = "Report deleted.";
+      render();
+    });
+    td.appendChild(btn);
+    tr.appendChild(td);
+    body.appendChild(tr);
+  });
+}
+
+form.addEventListener("submit", event => {
+  event.preventDefault();
+
+  const report = {
+    id: Date.now().toString() + Math.random().toString(16).slice(2),
+    project: document.getElementById("project").value.trim(),
+    liftId: document.getElementById("liftId").value.trim(),
+    capacity: document.getElementById("capacity").value,
+    floors: document.getElementById("floors").value,
+    date: document.getElementById("date").value,
+    status: document.getElementById("status").value,
+    remarks: document.getElementById("remarks").value.trim(),
+    action: document.getElementById("action").value.trim()
+  };
+
+  reports.unshift(report);
+  if (!persist()) {
+    reports.shift();
+    return;
+  }
+
+  form.reset();
+  message.textContent = "Report saved successfully!";
+  render();
+});
+
+document.getElementById("search").addEventListener("input", render);
+
+document.getElementById("export").addEventListener("click", () => {
+  const columns = ["Project","Lift ID","Capacity","Floors",
+    "Date","Status","Remarks","Corrective Action"];
+  const rows = reports.map(r => [
+    r.project,r.liftId,r.capacity,r.floors,
+    r.date,r.status,r.remarks,r.action
+  ]);
+  const csv = [columns, ...rows].map(row =>
+    row.map(value => {
+      let s = String(value ?? "");
+      if (/^[\s]*[=+\-@]/.test(s)) s = "'" + s;
+      return '"' + s.replace(/"/g, '""') + '"';
+    }).join(",")
+  ).join("\r\n");
+
+  const blob = new Blob(["\uFEFF" + csv], {
+    type: "text/csv;charset=utf-8;"
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "lift-inspection-reports.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+render();
+</script>
 </body>
 </html>
 
